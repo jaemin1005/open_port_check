@@ -4,14 +4,15 @@ use std::{process::Command, result};
  * 열려있는 Port 확인
  * os에 따라 열려있는 명령어를 다르게 호출한다.
  */
-pub fn get_open_ports() -> String {
+pub fn get_open_ports() -> Vec<(String, String, String)> {
     if cfg!(target_os = "windows") {
         let output = Command::new("netstat")
             .arg("-aon")
             .output()
             .expect("failed to execute netstat");
 
-        String::from_utf8_lossy(&output.stdout).to_string()
+        let result = String::from_utf8_lossy(&output.stdout).to_string();
+        parsing_window_netstat(&result)
     } else if cfg!(target_os = "macos") {
         let output = Command::new("lsof")
             .arg("-i")
@@ -20,9 +21,11 @@ pub fn get_open_ports() -> String {
             .output()
             .expect("failed to execute lsof");
 
-        String::from_utf8_lossy(&output.stdout).to_string()
+        let result = String::from_utf8_lossy(&output.stdout).to_string();
+        parsing_mac_lsof(&result)
+        
     } else {
-        "Unsupported operating system".to_string()
+        Vec::new()
     }
 }
 
@@ -68,9 +71,9 @@ fn parsing_mac_lsof(output: &str) -> Vec<(String, String, String)> {
             let columns: Vec<&str> = line.split_whitespace().collect();
 
             if columns.len() >= 9 && columns[9].contains("LISTEN") {
-                let process = columns[0].to_string(); // 프로세스 이름 (COMMAND)
-                let pid = columns[1].to_string(); // PID
-                let port_info = columns[8]; // 포트 정보 (127.0.0.1:3000)
+                let process = columns[0].to_string();
+                let pid = columns[1].to_string(); 
+                let port_info = columns[8]; 
 
                 // 포트 번호는 ":" 이후에 있음
                 if let Some(pos) = port_info.rfind(':') {
@@ -108,6 +111,12 @@ mod tests {
     use super::*;
 
     #[test]
+    // 
+    fn test_get_open_ports() {
+        
+    }
+
+    #[test]
     fn test_parsing_mac_lsof() {
         // 가짜 lsof 명령어 결과
         let lsof_output = "\
@@ -130,6 +139,7 @@ chrome    5678  user   48u  IPv4 0x4d5e6f 0t0      TCP 127.0.0.1:8080 (LISTEN)
         assert_eq!(result, expected_result);
     }
 
+    // 빈 출력일 때
     #[test]
     fn test_parsing_mac_lsof_with_empty_output() {
         let empty_output = "";

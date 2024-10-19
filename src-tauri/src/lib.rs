@@ -1,7 +1,17 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+use utils::port;
+
+pub mod utils {
+    pub mod port;
+}
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+#[tauri::command]
+fn get_open_ports() -> String {
+    port::get_open_ports()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

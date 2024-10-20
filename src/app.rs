@@ -1,7 +1,10 @@
-use leptos::leptos_dom::ev::SubmitEvent;
 use leptos::*;
-use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::*;
+
+use crate::components::search::SearchBar;
+use crate::components::table::PortTable;
+use crate::interfaces::port::PortInfo;
 
 #[wasm_bindgen]
 extern "C" {
@@ -9,59 +12,40 @@ extern "C" {
     async fn invoke(cmd: &str, args: JsValue) -> JsValue;
 }
 
-#[derive(Serialize, Deserialize)]
-struct GreetArgs<'a> {
-    name: &'a str,
-}
-
 #[component]
 pub fn App() -> impl IntoView {
-    let (name, set_name) = create_signal(String::new());
-    let (greet_msg, set_greet_msg) = create_signal(String::new());
+    let (ports, set_ports) = create_signal(Vec::<PortInfo>::new());
 
-    let update_name = move |ev| {
-        let v = event_target_value(&ev);
-        set_name.set(v);
-    };
+    let (filter_ports, set_filter_ports) = create_signal(Vec::<PortInfo>::new());
 
-    let greet = move |ev: SubmitEvent| {
-        ev.prevent_default();
+    create_effect(move |_| {
         spawn_local(async move {
-            let name = name.get_untracked();
-            if name.is_empty() {
-                return;
-            }
+            // Tauri 명령 호출
+            let args = JsValue::NULL;
+            let response = invoke("get_open_ports", args).await;
 
-            let args = serde_wasm_bindgen::to_value(&GreetArgs { name: &name }).unwrap();
-            // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-            let new_msg = invoke("greet", args).await.as_string().unwrap();
-            set_greet_msg.set(new_msg);
+            match from_value::<Vec<PortInfo>>(response) {
+                Ok(ports) => {
+                    set_ports.set(ports.clone());
+                    set_filter_ports.set(ports.clone())
+                }
+                Err(_) => set_ports.set(Vec::<PortInfo>::new()),
+            }
         });
+    });
+
+    let clear_event_cb = move || {
+        set_filter_ports.set(ports.get());
     };
 
     view! {
-        <main class="container">
-            <h1>"Welcome to Tauri + Leptos"</h1>
-
-            <div class="row">
-                <a href="https://tauri.app" target="_blank">
-                    <img src="public/tauri.svg" class="logo tauri" alt="Tauri logo"/>
-                </a>
-                <a href="https://docs.rs/leptos/" target="_blank">
-                    <img src="public/leptos.svg" class="logo leptos" alt="Leptos logo"/>
-                </a>
+        <div>
+            <div class="w-screen fixed z-50 bg-white">
+                <SearchBar ports=ports set_filter_ports=set_filter_ports clear_event=clear_event_cb/>
             </div>
-            <p>"Click on the Tauri and Leptos logos to learn more."</p>
-
-            <form class="row" on:submit=greet>
-                <input
-                    id="greet-input"
-                    placeholder="Enter a name..."
-                    on:input=update_name
-                />
-                <button type="submit">"Greet"</button>
-            </form>
-            <p>{ move || greet_msg.get() }</p>
-        </main>
+            <div class="pt-10">
+                <PortTable props=filter_ports/>
+            </div>
+        </div>
     }
 }

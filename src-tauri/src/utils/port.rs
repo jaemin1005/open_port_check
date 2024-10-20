@@ -1,31 +1,26 @@
-use std::{process::Command, result};
+use std::process::Command;
+
+use crate::{enums::os::OS, traits::command};
 
 /**
  * 열려있는 Port 확인
  * os에 따라 열려있는 명령어를 다르게 호출한다.
  */
-pub fn get_open_ports() -> Vec<(String, String, String)> {
+pub fn get_open_ports(executor: &dyn command::CommandExecutor) -> OS {
     if cfg!(target_os = "windows") {
-        let output = Command::new("netstat")
-            .arg("-aon")
-            .output()
-            .expect("failed to execute netstat");
-
-        let result = String::from_utf8_lossy(&output.stdout).to_string();
-        parsing_window_netstat(&result)
+        let result = executor.execute_command("netstat", &["-aon"]);
+        match result {
+            Ok(output) => OS::Windows(output),
+            Err(_) => OS::Unsupported,
+        }
     } else if cfg!(target_os = "macos") {
-        let output = Command::new("lsof")
-            .arg("-i")
-            .arg("-P")
-            .arg("-n")
-            .output()
-            .expect("failed to execute lsof");
-
-        let result = String::from_utf8_lossy(&output.stdout).to_string();
-        parsing_mac_lsof(&result)
-        
+        let result = executor.execute_command("lsof", &["-i", "-P", "-n"]);
+        match result {
+            Ok(output) => OS::MacOS(output),
+            Err(_) => OS::Unsupported,
+        }
     } else {
-        Vec::new()
+        OS::Unsupported
     }
 }
 
@@ -35,7 +30,7 @@ pub fn get_open_ports() -> Vec<(String, String, String)> {
  * Proto  Local Address          Foreign Address        State           PID
  * TCP    127.0.0.1:3000         0.0.0.0:0              LISTENING       1234
  */
-fn parsing_window_netstat(output: &str) -> Vec<(String, String, String)> {
+pub fn parsing_window_netstat(output: &str) -> Vec<(String, String, String)> {
     output
         .lines()
         .skip(4)
@@ -48,7 +43,11 @@ fn parsing_window_netstat(output: &str) -> Vec<(String, String, String)> {
 
                 if let Some(pos) = local_address.rfind(':') {
                     let port = &local_address[pos + 1..];
-                    return Some(("Unknown".to_string(), port.to_string(), pid));
+
+                    let process_name =
+                        window_get_process_name(&pid).unwrap_or_else(|| "Unknown".to_string());
+
+                    return Some((process_name, port.to_string(), pid));
                 }
             }
             None
@@ -56,37 +55,7 @@ fn parsing_window_netstat(output: &str) -> Vec<(String, String, String)> {
         .collect()
 }
 
-/**
- * 맥의 lsof의 결과를 파싱하여 (Process, Port, Pid)의 튜플로 나타낸다
- *
- * ex)
- * COMMAND   PID   USER   FD   TYPE    DEVICE SIZE/OFF NODE NAME
- * firefox   1234  user   45u  IPv4 0x1a2b3c 0t0      TCP 127.0.0.1:3000 (LISTEN)
- */
-fn parsing_mac_lsof(output: &str) -> Vec<(String, String, String)> {
-    output
-        .lines()
-        .skip(1)
-        .filter_map(|line| {
-            let columns: Vec<&str> = line.split_whitespace().collect();
-
-            if columns.len() >= 9 && columns[9].contains("LISTEN") {
-                let process = columns[0].to_string();
-                let pid = columns[1].to_string(); 
-                let port_info = columns[8]; 
-
-                // 포트 번호는 ":" 이후에 있음
-                if let Some(pos) = port_info.rfind(':') {
-                  let port = &port_info[pos + 1..];
-                  return Some((process, port.to_string(), pid));
-                }
-            }
-            None
-        })
-        .collect()
-}
-
-fn window_get_process_name(pid: &str) -> Option<String> {
+pub fn window_get_process_name(pid: &str) -> Option<String> {
     let output = Command::new("tasklist")
         .arg("/FI")
         .arg(format!("PID eq {}", pid))
@@ -106,14 +75,93 @@ fn window_get_process_name(pid: &str) -> Option<String> {
     None
 }
 
+/**
+ * 맥의 lsof의 결과를 파싱하여 (Process, Port, Pid)의 튜플로 나타낸다
+ *
+ * ex)
+ * COMMAND   PID   USER   FD   TYPE    DEVICE SIZE/OFF NODE NAME
+ * firefox   1234  user   45u  IPv4 0x1a2b3c 0t0      TCP 127.0.0.1:3000 (LISTEN)
+ */
+pub fn parsing_mac_lsof(output: &str) -> Vec<(String, String, String)> {
+    output
+        .lines()
+        .skip(1)
+        .filter_map(|line| {
+            let columns: Vec<&str> = line.split_whitespace().collect();
+
+            if columns.len() >= 9 && columns[9].contains("LISTEN") {
+                let process = columns[0].to_string();
+                let pid = columns[1].to_string();
+                let port_info = columns[8];
+
+                // 포트 번호는 ":" 이후에 있음
+                if let Some(pos) = port_info.rfind(':') {
+                    let port = &port_info[pos + 1..];
+                    return Some((process, port.to_string(), pid));
+                }
+            }
+            None
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::traits::command::MockCommandExecutor;
 
     #[test]
-    // 
-    fn test_get_open_ports() {
-        
+    #[cfg(target_os = "windows")]
+    fn test_get_open_ports_windows() {
+        let mock_executor = MockCommandExecutor;
+
+        // Windows 환경에 대한 get_open_ports 테스트
+        let result = get_open_ports(&mock_executor);
+
+        // 예상되는 결과를 벡터로 정의합니다
+        let expected_result = "Proto  Local Address          State           PID\n\
+                                           TCP    127.0.0.1:8080    LISTENING       1234"
+            .to_string();
+
+        // 결과 비교
+        match result {
+            OS::Windows(output) => assert_eq!(output, expected_result),
+            _ => panic!("Expected Windows result"),
+        }
+    }
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn test_get_open_ports_macos() {
+        let mock_executor = MockCommandExecutor;
+
+        // macOS 환경에 대한 get_open_ports 테스트
+        let result = get_open_ports(&mock_executor);
+
+        // 예상되는 결과를 벡터로 정의합니다
+        let expected_result = "COMMAND   PID   USER   NODE NAME\n\
+                                         chrome    5678  user   0t0  TCP 192.168.1.10:3000 (LISTEN)"
+            .to_string();
+
+        // 결과 비교
+        match result {
+            OS::MacOS(output) => assert_eq!(output, expected_result),
+            _ => panic!("Expected MacOS result"),
+        }
+    }
+
+    #[test]
+    fn test_get_open_ports_unsupported() {
+        let mock_executor = MockCommandExecutor;
+
+        // Unsupported 환경에 대한 get_open_ports 테스트
+        let result = get_open_ports(&mock_executor);
+
+        // Unsupported 여부를 확인합니다
+        match result {
+            OS::Unsupported => (),
+            _ => panic!("Expected Unsupported result"),
+        }
     }
 
     #[test]

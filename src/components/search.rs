@@ -23,7 +23,7 @@ pub fn SearchBar(
         set_filter_ports.set(ports.get());
         set_filter_ports.update(|ports| {
             ports.retain(|port| match filter.get() {
-                FILTER::PROCESS => port.get_process_name().contains(&value),
+                FILTER::PROCESS => port.get_process_name().to_lowercase().contains(&value.to_lowercase()),
                 FILTER::PORT => port.get_port().contains(&value),
                 FILTER::PID => port.get_pid().contains(&value),
             });

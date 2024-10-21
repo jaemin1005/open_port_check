@@ -23,7 +23,7 @@ impl CommandExecutor for MockCommandExecutor {
     fn execute_command(&self, command: &str, _args: &[&str]) -> Result<String, String> {
         match command {
             "netstat" => Ok("Proto  Local Address          State           PID\nTCP    127.0.0.1:8080    LISTENING       1234".to_string()),
-            "lsof" => Ok("COMMAND   PID   USER   NODE NAME\nchrome    5678  user   0t0  TCP 192.168.1.10:3000 (LISTEN)".to_string()),
+            "sh" => Ok("COMMAND   PID   USER   NODE NAME\nchrome    5678  user   0t0  TCP 192.168.1.10:3000 (LISTEN)".to_string()),
             _ => Err("Unsupported command".to_string()),
         }
     }

@@ -14,7 +14,7 @@ pub fn get_open_ports(executor: &dyn command::CommandExecutor) -> OS {
             Err(_) => OS::Unsupported,
         }
     } else if cfg!(target_os = "macos") {
-        let result = executor.execute_command("lsof", &["-i", "-P", "-n"]);
+        let result = executor.execute_command("sh", &["-c", "lsof -i -P -n | grep LISTEN"]);
         match result {
             Ok(output) => OS::MacOS(output),
             Err(_) => OS::Unsupported,
@@ -89,7 +89,7 @@ pub fn parsing_mac_lsof(output: &str) -> Vec<(String, String, String)> {
         .filter_map(|line| {
             let columns: Vec<&str> = line.split_whitespace().collect();
 
-            if columns.len() >= 9 && columns[9].contains("LISTEN") {
+            if columns.len() >= 10 && columns[9].contains("LISTEN") {
                 let process = columns[0].to_string();
                 let pid = columns[1].to_string();
                 let port_info = columns[8];
@@ -108,7 +108,18 @@ pub fn parsing_mac_lsof(output: &str) -> Vec<(String, String, String)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::command::MockCommandExecutor;
+    use crate::traits::command::CommandExecutor;
+
+    pub struct MockCommandExecutor;
+    impl CommandExecutor for MockCommandExecutor {
+        fn execute_command(&self, command: &str, _args: &[&str]) -> Result<String, String> {
+            match command {
+                "netstat" => Ok("Proto  Local Address          State           PID\nTCP    127.0.0.1:8080    LISTENING       1234".to_string()),
+                "sh" => Ok("COMMAND   PID   USER   NODE NAME\nchrome    5678  user   0t0  TCP 192.168.1.10:3000 (LISTEN)".to_string()),
+                _ => Err("Unsupported command".to_string()),
+            }
+        }
+    }
 
     #[test]
     #[cfg(target_os = "windows")]
@@ -131,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_os = "macos")]
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
     fn test_get_open_ports_macos() {
         let mock_executor = MockCommandExecutor;
 

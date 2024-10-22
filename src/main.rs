@@ -11,6 +11,7 @@ pub mod components {
 pub mod interfaces {
     pub mod port;
     pub mod filter;
+    pub mod kill;
 }
 
 fn main() {

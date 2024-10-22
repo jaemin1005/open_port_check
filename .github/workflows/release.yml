@@ -1,6 +1,6 @@
-name: "publish"
+name: publish
 
-on:
+"on":
   push:
     branches:
       - release
@@ -13,13 +13,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: "macos-latest" # for Arm based macs (M1 and above).
+          - platform: macos-latest # for Arm based macs (M1 and above).
             args: "--target aarch64-apple-darwin"
-          - platform: "macos-latest" # for Intel based macs.
+          - platform: macos-latest # for Intel based macs.
             args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-22.04" # for Tauri v1 you could replace this with ubuntu-20.04.
+          - platform: ubuntu-22.04 # for Tauri v1 you could replace this with ubuntu-20.04.
             args: ""
-          - platform: "windows-latest"
+          - platform: windows-latest
             args: ""
 
     runs-on: ${{ matrix.platform }}
@@ -38,38 +38,38 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: "npm" # Set this to npm, yarn or pnpm.
+          cache: npm # Set this to npm, yarn or pnpm.
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.platform == 'macos-latest' &&
+            'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      # Windows 전용 Perl 설치 (빌드 시 필요)
       - name: Install Perl (Windows only)
         if: matrix.platform == 'windows-latest'
         run: choco install strawberryperl
 
-      # Windows 환경에서 vcpkg를 설치하고 OpenSSL 설치
-      # 이 부분이 추가되었습니다.
       - name: Install vcpkg and OpenSSL (Windows only)
         if: matrix.platform == 'windows-latest'
+        env:
+          VCPKG_ROOT: ${{ runner.temp }}\vcpkg
+          VCPKGRS_DYNAMIC: 1
         run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          ./vcpkg/bootstrap-vcpkg.bat
-          ./vcpkg/vcpkg install openssl:x64-windows
-    
+          git clone https://github.com/microsoft/vcpkg.git ${{ env.VCPKG_ROOT }}
+          .\${{ env.VCPKG_ROOT }}\bootstrap-vcpkg.bat
+          .\${{ env.VCPKG_ROOT }}\vcpkg.exe integrate install
+          .\${{ env.VCPKG_ROOT }}\vcpkg.exe install openssl:x64-windows
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./src-tauri -> target"
+          workspaces: ./src-tauri -> target
 
       - name: install frontend dependencies
         # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
-        run:
-          npm install # change this to npm or pnpm depending on which one you use.
-
+        run: npm install # change this to npm or pnpm depending on which one you use.
 
       # Add wasm32 target for WASM builds
       - name: Add wasm32 target
@@ -82,6 +82,8 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
+          VCPKGRS_DYNAMIC: 1
         with:
           tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: "App v__VERSION__"

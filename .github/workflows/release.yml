@@ -47,18 +47,23 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       # Windows 환경에서 vcpkg를 설치하고 OpenSSL 설치
+      # 이 부분이 추가되었습니다.
       - name: Install vcpkg and OpenSSL (Windows only)
         if: matrix.platform == 'windows-latest'
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           ./vcpkg/bootstrap-vcpkg.bat
-          ./vcpkg/vcpkg install openssl
+          ./vcpkg/vcpkg install openssl:x64-windows
 
+      # OpenSSL 환경 변수 설정
+      # 이 부분이 추가되었습니다.
       - name: Set OpenSSL environment variables (Windows only)
         if: matrix.platform == 'windows-latest'
         run: |
-          echo "OPENSSL_DIR=$(./vcpkg/vcpkg integrate install)" >> $GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=$(./vcpkg/vcpkg list openssl)" >> $GITHUB_ENV
+          echo "OPENSSL_DIR=$(pwd)/vcpkg/installed/x64-windows" >> $GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=$(pwd)/vcpkg/installed/x64-windows/lib" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=$(pwd)/vcpkg/installed/x64-windows/include" >> $GITHUB_ENV
+          echo "PATH=$(pwd)/vcpkg/installed/x64-windows/bin:$PATH" >> $GITHUB_ENV
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2

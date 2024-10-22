@@ -9,7 +9,7 @@ pub fn kill_process(executor: &dyn CommandExecutor, pid: String) -> bool {
             .execute_command("taskkill", &["/PID", &pid, "/F"])
             .is_ok()
     } else if cfg!(target_os = "macos") {
-        executor.execute_command("kill", &[&pid]).is_ok()
+        executor.execute_command("kill", &["-9", &pid]).is_ok()
     } else {
         false
     }

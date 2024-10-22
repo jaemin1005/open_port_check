@@ -51,11 +51,8 @@ jobs:
       - name: Install OpenSSL (Windows only)
         if: matrix.platform == 'windows-latest'
         run: |
-          # Chocolatey를 사용하여 OpenSSL 설치
           choco install openssl.light
-          # OpenSSL의 bin 디렉토리를 PATH에 추가
           echo "C:\Program Files\OpenSSL-Win64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          # 환경 변수 설정
           echo "OPENSSL_DIR=C:\Program Files\OpenSSL-Win64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "OPENSSL_LIB_DIR=C:\Program Files\OpenSSL-Win64\lib" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "OPENSSL_INCLUDE_DIR=C:\Program Files\OpenSSL-Win64\include" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append

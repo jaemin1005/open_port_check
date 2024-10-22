@@ -1,9 +1,11 @@
 use leptos::*;
+use leptos_dom::logging::console_log;
 use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::*;
 
 use crate::components::search::SearchBar;
 use crate::components::table::PortTable;
+use crate::interfaces::kill::KillArgs;
 use crate::interfaces::port::PortInfo;
 
 #[wasm_bindgen]
@@ -18,24 +20,42 @@ pub fn App() -> impl IntoView {
 
     let (filter_ports, set_filter_ports) = create_signal(Vec::<PortInfo>::new());
 
-    create_effect(move |_| {
-        spawn_local(async move {
-            // Tauri 명령 호출
-            let args = JsValue::NULL;
-            let response = invoke("get_open_ports", args).await;
+    let fetch_ports_async = move || async move {
+        let args = JsValue::NULL;
+        let response = invoke("get_open_ports", args).await;
 
-            match from_value::<Vec<PortInfo>>(response) {
-                Ok(ports) => {
-                    set_ports.set(ports.clone());
-                    set_filter_ports.set(ports.clone())
-                }
-                Err(_) => set_ports.set(Vec::<PortInfo>::new()),
+        match from_value::<Vec<PortInfo>>(response) {
+            Ok(results) => {
+                set_ports.set(Vec::<PortInfo>::new());
+                set_filter_ports.set(Vec::<PortInfo>::new());
+                set_ports.set(results.clone());
+                set_filter_ports.set(results.clone());
             }
-        });
+            Err(_) => set_ports.set(Vec::<PortInfo>::new()),
+        }
+    };
+
+    create_effect(move |_| {
+        spawn_local(fetch_ports_async());
     });
 
     let clear_event_cb = move || {
         set_filter_ports.set(ports.get());
+        spawn_local(fetch_ports_async());
+    };
+
+    let delet_event_cb = move |pid: String| {
+        spawn_local(async move {
+            let args = serde_wasm_bindgen::to_value(&KillArgs { pid: &pid }).unwrap();
+
+            let kill = invoke("kill_process", args)
+                .await
+                .as_bool()
+                .unwrap_or_else(|| false);
+            if kill {
+                fetch_ports_async().await;
+            }
+        });
     };
 
     view! {
@@ -44,7 +64,7 @@ pub fn App() -> impl IntoView {
                 <SearchBar ports=ports set_filter_ports=set_filter_ports clear_event=clear_event_cb/>
             </div>
             <div class="pt-10">
-                <PortTable props=filter_ports/>
+                <PortTable props=filter_ports delete_cb=delet_event_cb/>
             </div>
         </div>
     }

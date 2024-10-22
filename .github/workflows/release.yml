@@ -46,6 +46,11 @@ jobs:
           # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
+      # Windows 전용 Perl 설치 (빌드 시 필요)
+      - name: Install Perl (Windows only)
+        if: matrix.platform == 'windows-latest'
+        run: choco install strawberryperl
+
       # Windows 환경에서 vcpkg를 설치하고 OpenSSL 설치
       # 이 부분이 추가되었습니다.
       - name: Install vcpkg and OpenSSL (Windows only)

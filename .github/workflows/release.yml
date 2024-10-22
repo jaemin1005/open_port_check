@@ -56,6 +56,7 @@ jobs:
         env:
           VCPKG_ROOT: ${{ runner.temp }}\vcpkg
           VCPKGRS_DYNAMIC: 1
+          OPENSSL_DIR: ${{ runner.temp }}\vcpkg\installed\x64-windows
         run: |
           git clone https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
           & "${{ env.VCPKG_ROOT }}\bootstrap-vcpkg.bat"
@@ -85,6 +86,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
           VCPKGRS_DYNAMIC: 1
+          OPENSSL_DIR: ${{ env.OPENSSL_DIR }}
         with:
           tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: "App v__VERSION__"

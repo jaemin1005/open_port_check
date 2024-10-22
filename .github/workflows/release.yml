@@ -57,10 +57,10 @@ jobs:
           VCPKG_ROOT: ${{ runner.temp }}\vcpkg
           VCPKGRS_DYNAMIC: 1
         run: |
-          git clone https://github.com/microsoft/vcpkg.git ${{ env.VCPKG_ROOT }}
-          .\${{ env.VCPKG_ROOT }}\bootstrap-vcpkg.bat
-          .\${{ env.VCPKG_ROOT }}\vcpkg.exe integrate install
-          .\${{ env.VCPKG_ROOT }}\vcpkg.exe install openssl:x64-windows
+          git clone https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
+          "${{ env.VCPKG_ROOT }}\bootstrap-vcpkg.bat"
+          "${{ env.VCPKG_ROOT }}\vcpkg.exe" integrate install
+          "${{ env.VCPKG_ROOT }}\vcpkg.exe" install openssl:x64-windows
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2

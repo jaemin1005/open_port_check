@@ -50,8 +50,7 @@ jobs:
       - name: Install Perl (Windows only)
         if: matrix.platform == 'windows-latest'
         run: choco install strawberryperl
-
-      # Windows 환경에서 vcpkg를 설치하고 OpenSSL 설치
+      # Windows 환경에서 vcpkg를 사용해 OpenSSL 설치
       # 이 부분이 추가되었습니다.
       - name: Install vcpkg and OpenSSL (Windows only)
         if: matrix.platform == 'windows-latest'
@@ -59,6 +58,20 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           ./vcpkg/bootstrap-vcpkg.bat
           ./vcpkg/vcpkg install openssl:x64-windows
+
+      # OpenSSL 환경 변수 및 인증서 설정
+      # 이 부분이 추가되었습니다.
+      - name: Set OpenSSL environment variables (Windows only)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
+          echo "OPENSSL_DIR=$(pwd)/vcpkg/installed/x64-windows" >> $GITHUB_ENV
+          echo "SSL_CERT_FILE=$(pwd)/vcpkg/installed/x64-windows/certs/cacert.pem" >> $GITHUB_ENV
+        # Root Certificates 다운로드 및 설정
+        # 이 부분이 추가되었습니다.
+        shell: cmd
+        run: |
+          curl -o $(pwd)/vcpkg/installed/x64-windows/certs/cacert.pem https://curl.se/ca/cacert.pem
     
       - name: Rust cache
         uses: swatinem/rust-cache@v2

@@ -12,6 +12,7 @@ pub mod interfaces {
     pub mod port;
     pub mod filter;
     pub mod kill;
+    pub mod sort;
 }
 
 fn main() {

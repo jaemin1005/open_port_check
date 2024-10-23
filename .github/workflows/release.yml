@@ -75,7 +75,7 @@ jobs:
       - name: Download Root Certificates (Windows only)
         if: matrix.platform == 'windows-latest'
         run: |
-          mkdir -p $(pwd)/vcpkg/installed/x64-windows/certs
+          New-Item -Path $(pwd)/vcpkg/installed/x64-windows/certs -ItemType Directory -Force
           curl -o $(pwd)/vcpkg/installed/x64-windows/certs/cacert.pem https://curl.se/ca/cacert.pem
     
       - name: Rust cache

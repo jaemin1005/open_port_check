@@ -1,29 +1,109 @@
-// components/port_table.rs
-use leptos::*;
+use std::str::FromStr;
 
-use crate::interfaces::port::PortInfo;
+use ev::MouseEvent;
+// components/port_table.rs
+use crate::interfaces::{filter::FILTER, port::PortInfo, sort::SORT};
+use leptos::*;
+use leptos_dom::logging::console_error;
+use wasm_bindgen::JsCast;
 
 #[component]
 pub fn PortTable(
     props: ReadSignal<Vec<PortInfo>>,
     delete_cb: impl Fn(String) + 'static + Clone,
 ) -> impl IntoView {
+    let (filter, set_filter) = create_signal(FILTER::PROCESS);
+    let (select_sort, set_select_sort) = create_signal(SORT::NONE);
+
+    let on_header_click = move |e: MouseEvent| {
+        if let Some(target) = e.target() {
+            // 대상 요소를 HtmlElement로 변환
+            // 요소의 텍스트 내용(innerText)을 가져옴
+            if let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() {
+                let header_text = element.inner_text();
+
+                let event_value = match FILTER::from_str(&header_text) {
+                    Ok(ok) => ok,
+                    Err(_) => {
+                        console_error("Failed to parse FILTER value");
+                        return;
+                    }
+                };
+
+                if filter.get() == event_value {
+                    set_select_sort.update(|option| {
+                        *option = match *option {
+                            SORT::NONE => SORT::ASC,
+                            SORT::ASC => SORT::DESC,
+                            SORT::DESC => SORT::NONE,
+                        };
+                    });
+                } else {
+                    set_filter.set(event_value);
+                    set_select_sort.set(SORT::ASC);
+                }
+            }
+        }
+    };
+
+    // create_memo를 이용해 계산된 값을 뷰를 이용하는데 그린다.
+    // 현재 상태에 따라 값 갱신
+    let sort_and_filter_ports = create_memo(move |_| {
+        let mut filtered_ports = props.get();
+        let current_filter = filter.get();
+        let current_sort = select_sort.get();
+
+        match current_filter {
+            FILTER::PROCESS => match current_sort {
+                SORT::ASC => {
+                    filtered_ports.sort_by(|a, b| a.get_process_name().cmp(&b.get_process_name()));
+                }
+                SORT::DESC => {
+                    filtered_ports.sort_by(|a, b| b.get_process_name().cmp(&a.get_process_name()));
+                }
+                SORT::NONE => {}
+            },
+            FILTER::PORT => match current_sort {
+                SORT::ASC => {
+                    filtered_ports
+                        .sort_by(|a, b| a.get_port_as_usize().cmp(&b.get_port_as_usize()));
+                }
+                SORT::DESC => {
+                    filtered_ports
+                        .sort_by(|a, b| b.get_port_as_usize().cmp(&a.get_port_as_usize()));
+                }
+                SORT::NONE => {}
+            },
+            FILTER::PID => match current_sort {
+                SORT::ASC => {
+                    filtered_ports.sort_by(|a, b| a.get_pid_as_usize().cmp(&b.get_pid_as_usize()));
+                }
+                SORT::DESC => {
+                    filtered_ports.sort_by(|a, b| b.get_pid_as_usize().cmp(&a.get_pid_as_usize()));
+                }
+                SORT::NONE => {}
+            },
+        }
+
+        filtered_ports
+    });
+
     view! {
         <div class="overflow-hidden ">
         <table class=" min-w-full rounded-xl">
             <thead>
                 <tr class="bg-gray-50">
-                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize rounded-t-xl"> PROCESS </th>
-                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize"> PORT </th>
-                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize"> PID </th>
+                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize rounded-t-xl" on:click=on_header_click>{FILTER::PROCESS.to_string()}</th>
+                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize" on:click=on_header_click>{FILTER::PORT.to_string()}</th>
+                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize" on:click=on_header_click>{FILTER::PID.to_string()}</th>
                     <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize"> Kill </th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-300 ">
             <For
-                each=move || props.get()
+                each=move || sort_and_filter_ports.get()
                 key=|prop| format!("{}_{}", prop.get_pid(), prop.get_port())
-                 children=move |port_info: PortInfo| {
+                children=move |port_info: PortInfo| {
                         let delete_cb = delete_cb.clone();
 
                         view!

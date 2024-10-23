@@ -50,27 +50,32 @@ jobs:
       - name: Install Perl (Windows only)
         if: matrix.platform == 'windows-latest'
         run: choco install strawberryperl
+
       # Windows 환경에서 vcpkg를 사용해 OpenSSL 설치
       # 이 부분이 추가되었습니다.
       - name: Install vcpkg and OpenSSL (Windows only)
         if: matrix.platform == 'windows-latest'
         run: |
           git clone https://github.com/microsoft/vcpkg.git
-          ./vcpkg/bootstrap-vcpkg.bat
-          ./vcpkg/vcpkg install openssl:x64-windows
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg.exe install openssl:x64-windows
 
       # OpenSSL 환경 변수 및 인증서 설정
-      # 이 부분이 추가되었습니다.
+      # 'run' 키가 두 번 정의되어 있던 부분을 수정했습니다.
       - name: Set OpenSSL environment variables (Windows only)
         if: matrix.platform == 'windows-latest'
+        shell: bash  # 이 부분을 추가했습니다.
         run: |
           echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
           echo "OPENSSL_DIR=$(pwd)/vcpkg/installed/x64-windows" >> $GITHUB_ENV
           echo "SSL_CERT_FILE=$(pwd)/vcpkg/installed/x64-windows/certs/cacert.pem" >> $GITHUB_ENV
-        # Root Certificates 다운로드 및 설정
-        # 이 부분이 추가되었습니다.
-        shell: cmd
+
+      # Root Certificates 다운로드 및 설정
+      # 이 부분을 별도의 스텝으로 분리했습니다.
+      - name: Download Root Certificates (Windows only)
+        if: matrix.platform == 'windows-latest'
         run: |
+          mkdir -p $(pwd)/vcpkg/installed/x64-windows/certs
           curl -o $(pwd)/vcpkg/installed/x64-windows/certs/cacert.pem https://curl.se/ca/cacert.pem
     
       - name: Rust cache

@@ -1,5 +1,4 @@
 use leptos::*;
-use leptos_dom::logging::console_log;
 use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::*;
 

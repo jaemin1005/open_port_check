@@ -10,6 +10,8 @@ pub fn kill_process(executor: &dyn CommandExecutor, pid: String) -> bool {
             .is_ok()
     } else if cfg!(target_os = "macos") {
         executor.execute_command("kill", &["-9", &pid]).is_ok()
+    } else if cfg!(target_os = "linux") {
+        executor.execute_command("kill", &["-9", &pid]).is_ok()
     } else {
         false
     }
@@ -52,6 +54,14 @@ mod tests {
 
     #[test]
     #[cfg(target_os = "macos")]
+    fn test_kill_process_macos() {
+        let mock_executor = MockKillCommandExecutor;
+        let result = kill_process(&mock_executor, TEST_PID.to_string());
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
     fn test_kill_process_macos() {
         let mock_executor = MockKillCommandExecutor;
         let result = kill_process(&mock_executor, TEST_PID.to_string());

@@ -15,4 +15,12 @@ impl PortInfo {
     pub fn get_pid(&self) -> String {
         self.2.clone()
     }
+
+    pub fn get_port_as_usize(&self) -> usize {
+        self.1.parse::<usize>().unwrap()
+    }
+
+    pub fn get_pid_as_usize(&self) -> usize {
+        self.2.parse::<usize>().unwrap()
+    }
 }

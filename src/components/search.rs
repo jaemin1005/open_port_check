@@ -1,4 +1,5 @@
 use leptos::*;
+use leptos_dom::logging::console_log;
 use std::str::FromStr;
 
 use crate::interfaces::filter::FILTER;
@@ -19,6 +20,15 @@ pub fn SearchBar(
     let on_search_change = move |e| {
         let value = event_target_value(&e);
         // 필터링 로직 적용
+
+        ports.get().iter().for_each(|port| {
+            console_log(format!(
+                "PROCESS NAME: {} PORT: {} PID: {}",
+                &port.get_process_name(),
+                &port.get_port(),         
+                &port.get_pid()           
+            ).as_str());
+        });
 
         set_filter_ports.set(ports.get());
         set_filter_ports.update(|ports| {

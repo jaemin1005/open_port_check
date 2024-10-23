@@ -1,5 +1,6 @@
 // components/port_table.rs
 use leptos::*;
+use leptos_dom::logging::console_log;
 
 use crate::interfaces::port::PortInfo;
 
@@ -8,6 +9,7 @@ pub fn PortTable(
     props: ReadSignal<Vec<PortInfo>>,
     delete_cb: impl Fn(String) + 'static + Clone,
 ) -> impl IntoView {
+
     view! {
         <div class="overflow-hidden ">
         <table class=" min-w-full rounded-xl">
@@ -26,7 +28,7 @@ pub fn PortTable(
                 // a unique key for each item
                 key=|prop| prop.get_pid()
                 // renders each item to a view
-                 children=move |port_info: PortInfo| {
+                children=move |port_info: PortInfo| {
                         let delete_cb = delete_cb.clone();
 
                         view!

@@ -60,23 +60,20 @@ jobs:
           .\vcpkg\bootstrap-vcpkg.bat
           .\vcpkg\vcpkg.exe install openssl:x64-windows
 
-      # OpenSSL 환경 변수 및 인증서 설정
-      # 'run' 키가 두 번 정의되어 있던 부분을 수정했습니다.
       - name: Set OpenSSL environment variables (Windows only)
         if: matrix.platform == 'windows-latest'
-        shell: bash  # 이 부분을 추가했습니다.
+        shell: bash
         run: |
-          echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
-          echo "OPENSSL_DIR=$(pwd)/vcpkg/installed/x64-windows" >> $GITHUB_ENV
-          echo "SSL_CERT_FILE=$(pwd)/vcpkg/installed/x64-windows/certs/cacert.pem" >> $GITHUB_ENV
+          echo "VCPKG_ROOT=${{ env.GITHUB_WORKSPACE }}/vcpkg" >> $GITHUB_ENV
+          echo "OPENSSL_DIR=${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows" >> $GITHUB_ENV
+          echo "SSL_CERT_FILE=${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows/certs/cacert.pem" >> $GITHUB_ENV
 
       # Root Certificates 다운로드 및 설정
-      # 이 부분을 별도의 스텝으로 분리했습니다.
       - name: Download Root Certificates (Windows only)
         if: matrix.platform == 'windows-latest'
         run: |
-          New-Item -Path $(pwd)/vcpkg/installed/x64-windows/certs -ItemType Directory -Force
-          curl -o $(pwd)/vcpkg/installed/x64-windows/certs/cacert.pem https://curl.se/ca/cacert.pem
+          New-Item -Path "${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows/certs" -ItemType Directory -Force
+          curl -o ${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows/certs/cacert.pem https://curl.se/ca/cacert.pem
     
       - name: Rust cache
         uses: swatinem/rust-cache@v2

@@ -21,11 +21,8 @@ pub fn PortTable(
             </thead>
             <tbody class="divide-y divide-gray-300 ">
             <For
-                // a function that returns the items we're iterating over; a signal is fine
                 each=move || props.get()
-                // a unique key for each item
-                key=|prop| prop.get_pid()
-                // renders each item to a view
+                key=|prop| format!("{}_{}", prop.get_pid(), prop.get_port())
                  children=move |port_info: PortInfo| {
                         let delete_cb = delete_cb.clone();
 

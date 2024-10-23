@@ -13,11 +13,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: "macos-latest" # for Arm based macs (M1 and above).
+          - platform: "macos-latest"
             args: "--target aarch64-apple-darwin"
-          - platform: "macos-latest" # for Intel based macs.
+          - platform: "macos-latest"
             args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-22.04" # for Tauri v1 you could replace this with ubuntu-20.04.
+          - platform: "ubuntu-22.04"
             args: ""
           - platform: "windows-latest"
             args: ""
@@ -26,33 +26,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-        # webkitgtk 4.0 is for Tauri v1 - webkitgtk 4.1 is for Tauri v2.
-        # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
 
       - name: setup node
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: "npm" # Set this to npm, yarn or pnpm.
+          cache: "npm"
 
-      - name: install Rust stable
+      - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      # Windows 전용 Perl 설치 (빌드 시 필요)
-      - name: Install Perl (Windows only)
-        if: matrix.platform == 'windows-latest'
-        run: choco install strawberryperl
-
       # Windows 환경에서 vcpkg를 사용해 OpenSSL 설치
-      # 이 부분이 추가되었습니다.
       - name: Install vcpkg and OpenSSL (Windows only)
         if: matrix.platform == 'windows-latest'
         run: |
@@ -60,45 +51,46 @@ jobs:
           .\vcpkg\bootstrap-vcpkg.bat
           .\vcpkg\vcpkg.exe install openssl:x64-windows
 
+      # OpenSSL 환경 변수 설정
       - name: Set OpenSSL environment variables (Windows only)
         if: matrix.platform == 'windows-latest'
-        shell: bash
         run: |
-          echo "VCPKG_ROOT=${{ env.GITHUB_WORKSPACE }}/vcpkg" >> $GITHUB_ENV
           echo "OPENSSL_DIR=${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows/include" >> $GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows/lib" >> $GITHUB_ENV
           echo "SSL_CERT_FILE=${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows/certs/cacert.pem" >> $GITHUB_ENV
 
-      # Root Certificates 다운로드 및 설정
+      # 인증서 다운로드
       - name: Download Root Certificates (Windows only)
         if: matrix.platform == 'windows-latest'
         run: |
           New-Item -Path "${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows/certs" -ItemType Directory -Force
           curl -o ${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows/certs/cacert.pem https://curl.se/ca/cacert.pem
-    
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
 
       - name: install frontend dependencies
-        # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
-        run:
-          npm install # change this to npm or pnpm depending on which one you use.
+        run: npm install
 
-
-      # Add wasm32 target for WASM builds
+      # WASM 타겟 추가
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
 
-      # Install Trunk (needed for `trunk build`)
+      # Trunk 설치 (WASM 빌드를 위해 필요)
       - name: Install trunk
         run: cargo install trunk
+
+      - name: Build project
+        run: trunk build
 
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
+          tagName: app-v__VERSION__
           releaseName: "App v__VERSION__"
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true

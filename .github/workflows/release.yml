@@ -54,12 +54,14 @@ jobs:
         if: matrix.platform == 'windows-latest'
         run: choco install openssl -y
 
-      - name: Set OPENSSL_DIR and PATH
+      - name: Set OpenSSL environment variables
         if: matrix.platform == 'windows-latest'
         run: |
-          $opensslPath = "C:\Program Files\OpenSSL-Win64"
-          echo "OPENSSL_DIR=$opensslPath" >> $env:GITHUB_ENV
-          echo "$opensslPath\bin" | Out-File -Append -Encoding ASCII $env:GITHUB_PATH
+          $opensslDir = "C:\Program Files\OpenSSL-Win64"
+          echo "OPENSSL_DIR=$opensslDir" >> $env:GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=$opensslDir\lib" >> $env:GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=$opensslDir\include" >> $env:GITHUB_ENV
+          echo "$opensslDir\bin" >> $env:GITHUB_PATH
 
       - name: Install Visual Studio Build Tools
         if: matrix.platform == 'windows-latest'

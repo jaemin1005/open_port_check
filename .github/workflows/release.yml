@@ -26,30 +26,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Windows 환경에서 vcpkg 설치 및 OpenSSL 설치
-      - name: Install vcpkg and OpenSSL (Windows only)
+      - name: Install OpenSSL on Windows
         if: matrix.platform == 'windows-latest'
         run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg.exe install openssl:x64-windows
-        shell: cmd
+          choco install openssl -y
+          echo "C:\Program Files\OpenSSL-Win64\bin" | Out-File -Append -Encoding ASCII $env:GITHUB_PATH
 
-      # vcpkg와 OpenSSL의 환경 변수 설정
-      - name: Set OpenSSL environment variables (Windows only)
+      - name: Verify OpenSSL Installation
         if: matrix.platform == 'windows-latest'
-        run: |
-          echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
-          echo "OPENSSL_DIR=$(pwd)/vcpkg/installed/x64-windows" >> $GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=$(pwd)/vcpkg/installed/x64-windows/include" >> $GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=$(pwd)/vcpkg/installed/x64-windows/lib" >> $GITHUB_ENV
-
-      # 인증서 다운로드
-      - name: Download Root Certificates (Windows only)
-        if: matrix.platform == 'windows-latest'
-        run: |
-          New-Item -Path "${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows/certs" -ItemType Directory -Force
-          curl -o ${{ env.GITHUB_WORKSPACE }}/vcpkg/installed/x64-windows/certs/cacert.pem https://curl.se/ca/cacert.pem
+        run: openssl version
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2

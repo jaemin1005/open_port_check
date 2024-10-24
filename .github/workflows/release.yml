@@ -45,31 +45,23 @@ jobs:
           # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
+      - name: Install vcpkg
+        if: matrix.platform == 'windows-latest'
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg.exe install openssl:x64-windows
+
+      - name: Set VCPKG_ROOT environment variable
+        if: matrix.platform == 'windows-latest'
+        run: echo "VCPKG_ROOT=$PWD\vcpkg" >> $env:GITHUB_ENV
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-
-      - name: Install OpenSSL
-        if: matrix.platform == 'windows-latest'
-        run: choco install openssl -y
-
-      - name: Set OpenSSL environment variables
-        if: matrix.platform == 'windows-latest'
-        run: |
-          $opensslDir = "C:\Program Files\OpenSSL-Win64"
-          echo "OPENSSL_DIR=$opensslDir" >> $env:GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=$opensslDir\lib" >> $env:GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=$opensslDir\include" >> $env:GITHUB_ENV
-          echo "$opensslDir\bin" >> $env:GITHUB_PATH
-
-      - name: Install Visual Studio Build Tools
-        if: matrix.platform == 'windows-latest'
-        run: |
-          choco install visualstudio2019buildtools -y
-          choco install visualstudio2019-workload-vctools -y
-
-           # WASM 타겟 추가
+      
+      # WASM 타겟 추가
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
 

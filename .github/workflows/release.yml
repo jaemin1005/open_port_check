@@ -50,6 +50,15 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      - name: Install vcpkg, OpenSSL, and build project
+        if: matrix.platform == 'windows-latest'
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg.exe install openssl:x64-windows
+          echo "VCPKG_ROOT=$PWD/vcpkg" >> $GITHUB_ENV
+          .\vcpkg\vcpkg.exe integrate install
+
       - name: Install Chocolatey
         if: matrix.platform == 'windows-latest'
         run: |

@@ -61,6 +61,7 @@ jobs:
           choco install make -y
           choco install visualstudio2019buildtools -y
           choco install visualstudio2019-workload-vctools -y
+          sudo apt-get install pkg-config libssl-dev
 
       # Trunk 설치 (WASM 빌드를 위해 필요)
       - name: Install trunk

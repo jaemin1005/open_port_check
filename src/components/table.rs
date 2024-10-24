@@ -92,10 +92,10 @@ pub fn PortTable(
         <div class="overflow-hidden ">
         <table class=" min-w-full rounded-xl">
             <thead>
-                <tr class="bg-gray-50">
-                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize rounded-t-xl" on:click=on_header_click>{FILTER::PROCESS.to_string()}</th>
-                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize" on:click=on_header_click>{FILTER::PORT.to_string()}</th>
-                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize" on:click=on_header_click>{FILTER::PID.to_string()}</th>
+                <tr class="bg-gray-50 select-none">
+                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize rounded-t-xl cursor-pointer" on:click=on_header_click>{FILTER::PROCESS.to_string()}</th>
+                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize cursor-pointer" on:click=on_header_click>{FILTER::PORT.to_string()}</th>
+                    <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize cursor-pointer" on:click=on_header_click>{FILTER::PID.to_string()}</th>
                     <th scope="col" class="p-5 text-left text-sm leading-6 font-semibold text-gray-900 capitalize"> Kill </th>
                 </tr>
             </thead>

@@ -49,19 +49,35 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-      
+
+      - name: Install Chocolatey
+        if: matrix.platform == 'windows-latest'
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force;
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12;
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+      - name: Install pkg-config and OpenSSL
+        if: matrix.platform == 'windows-latest'
+        run: |
+          choco install pkgconfiglite -y
+          choco install openssl -y
+
+      - name: Add pkg-config to PATH
+        if: matrix.platform == 'windows-latest'
+        run: |
+          $env:PATH += ";C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\pkgconfig"
+          echo "##[add-path]C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\pkgconfig"
+
+      - name: Verify installations
+        if: matrix.platform == 'windows-latest'
+        run: |
+          pkg-config --version
+          openssl version     
+
       # WASM 타겟 추가
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
-
-      - name: Install tools (C compiler, Perl, and Make)
-        if: matrix.platform == 'windows-latest'
-        run: |
-          choco install strawberryperl -y
-          choco install make -y
-          choco install visualstudio2019buildtools -y
-          choco install visualstudio2019-workload-vctools -y
-          sudo apt-get install pkg-config libssl-dev
 
       # Trunk 설치 (WASM 빌드를 위해 필요)
       - name: Install trunk

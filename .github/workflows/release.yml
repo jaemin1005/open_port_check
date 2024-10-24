@@ -55,7 +55,7 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg.exe install openssl:x64-windows
+          .\vcpkg\vcpkg.exe install openssl:x64-windows-static-md
           echo "VCPKG_ROOT=$PWD/vcpkg" >> $GITHUB_ENV
           .\vcpkg\vcpkg.exe integrate install
 

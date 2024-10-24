@@ -15,6 +15,7 @@ pub fn PortTable(
     let (filter, set_filter) = create_signal(FILTER::PROCESS);
     let (select_sort, set_select_sort) = create_signal(SORT::NONE);
 
+    // 헤더 클릭에 따라 select_sort, filter의 상태변화
     let on_header_click = move |e: MouseEvent| {
         if let Some(target) = e.target() {
             // 대상 요소를 HtmlElement로 변환

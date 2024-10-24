@@ -45,16 +45,13 @@ jobs:
           # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - name: Install vcpkg
+      - name: Install tools (C compiler, Perl, and Make)
         if: matrix.platform == 'windows-latest'
         run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg.exe install openssl:x64-windows
-
-      - name: Set VCPKG_ROOT environment variable
-        if: matrix.platform == 'windows-latest'
-        run: echo "VCPKG_ROOT=$PWD\vcpkg" >> $env:GITHUB_ENV
+          choco install strawberryperl -y
+          choco install make -y
+          choco install visualstudio2019buildtools -y
+          choco install visualstudio2019-workload-vctools -y
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2

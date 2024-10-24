@@ -66,8 +66,7 @@ jobs:
       - name: Add pkg-config to PATH
         if: matrix.platform == 'windows-latest'
         run: |
-          $env:PATH += ";C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\pkgconfig"
-          echo "##[add-path]C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\pkgconfig"
+          echo "C:\ProgramData\chocolatey\lib\pkgconfiglite\tools\pkgconfig" >> $env:GITHUB_PATH
 
       - name: Verify installations
         if: matrix.platform == 'windows-latest'

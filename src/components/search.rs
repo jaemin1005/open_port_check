@@ -45,7 +45,7 @@ pub fn SearchBar(
             <div class="flex flex-nowrap items-center px-2 rounded-lg space-x-4 mx-auto h-full">
                 <select
                     title="list"
-                    class="text-base font-extrabold text-gray-800 outline-none border-2 px-4 py-2 rounded-lg h-8"
+                    class="text-base font-extrabold text-gray-800 outline-none border-2 px-4 py-2 rounded-lg h-auto"
                     prop:value={move || filter.get().to_string()}
                     on:change=move |e| {
                         let value = event_target_value(&e);

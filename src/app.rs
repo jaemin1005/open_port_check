@@ -2,6 +2,7 @@ use leptos::*;
 use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::*;
 
+use crate::components::loading::Loading;
 use crate::components::search::SearchBar;
 use crate::components::table::PortTable;
 use crate::interfaces::kill::KillArgs;
@@ -19,7 +20,11 @@ pub fn App() -> impl IntoView {
 
     let (filter_ports, set_filter_ports) = create_signal(Vec::<PortInfo>::new());
 
+    let (loading, set_loading) = create_signal(false);
+
     let fetch_ports_async = move || async move {
+        set_loading.set(true);
+
         let args = JsValue::NULL;
         let response = invoke("get_open_ports", args).await;
 
@@ -32,6 +37,8 @@ pub fn App() -> impl IntoView {
             }
             Err(_) => set_ports.set(Vec::<PortInfo>::new()),
         }
+
+        set_loading.set(false);
     };
 
     create_effect(move |_| {
@@ -63,7 +70,9 @@ pub fn App() -> impl IntoView {
                 <SearchBar ports=ports set_filter_ports=set_filter_ports clear_event=clear_event_cb/>
             </div>
             <div class="pt-10">
-                <PortTable props=filter_ports delete_cb=delet_event_cb/>
+                <Show when=move || loading.get() == false fallback=|| view! {<Loading/>}>
+                    <PortTable props=filter_ports delete_cb=delet_event_cb/>
+                </Show>
             </div>
         </div>
     }

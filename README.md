@@ -1,7 +1,16 @@
-# Tauri + Leptos
+# 포트 정보 정렬 기능 프로젝트 README
 
-This template should help get you started developing with Tauri and Leptos.
+## 개요
 
-## Recommended IDE Setup
+Tauri + Leptos를 이용한 크로스 플랫폼 앱 프로젝트입니다. 이 앱은 'LISTEN' 상태인 포트들을 보여주고 종료할 수 있는 기능을 제공합니다.
 
-[VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+## 현재 상태
+
+- **macOS**: 기능 구현 및 테스트 완료
+- **Windows**: 현재 데스크탑에서 오류 발생 및 테스트 진행 중
+
+## 주요 기능
+
+- 사용자는 테이블 헤더를 클릭하여 포트 정보를 오름차순, 내림차순으로 정렬할 수 있습니다.
+- 휴지통 모양의 버튼을 누르면 프로세스가 종료됩니다.
+

@@ -22,8 +22,7 @@ impl CommandExecutor for OSCommandExecutor {
         }
 
         let output = cmd
-            .spawn()
-            .and_then(|child| child.wait_with_output())
+            .output()
             .map_err(|e| format!("Failed to execute command: {}", e))?;
 
         let result = String::from_utf8_lossy(&output.stdout).to_string();

@@ -2,6 +2,7 @@ use leptos::*;
 use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::*;
 
+use crate::components::loading::Loading;
 use crate::components::search::SearchBar;
 use crate::components::table::PortTable;
 use crate::interfaces::kill::KillArgs;
@@ -15,32 +16,35 @@ extern "C" {
 
 #[component]
 pub fn App() -> impl IntoView {
-    let (ports, set_ports) = create_signal(Vec::<PortInfo>::new());
-
     let (filter_ports, set_filter_ports) = create_signal(Vec::<PortInfo>::new());
 
-    let fetch_ports_async = move || async move {
-        let args = JsValue::NULL;
-        let response = invoke("get_open_ports", args).await;
+    let (loading, set_loading) = create_signal(false);
 
-        match from_value::<Vec<PortInfo>>(response) {
-            Ok(results) => {
-                set_ports.set(Vec::<PortInfo>::new());
-                set_filter_ports.set(Vec::<PortInfo>::new());
-                set_ports.set(results.clone());
-                set_filter_ports.set(results.clone());
+    let fetch_ports = create_resource(
+        || (), // 의존성이 없으므로 빈 튜플 사용
+        move |_| async move {
+            set_loading.set(true);
+
+            let args = JsValue::NULL;
+            let response = invoke("get_open_ports", args).await;
+
+            match from_value::<Vec<PortInfo>>(response) {
+                Ok(results) => {
+                    set_loading.set(false);
+                    set_filter_ports.set(results.clone());
+                    return results;
+                },
+                Err(_) => {
+                    set_loading.set(false);
+                    set_filter_ports.set(Vec::<PortInfo>::new());
+                    return Vec::<PortInfo>::new();
+                }
             }
-            Err(_) => set_ports.set(Vec::<PortInfo>::new()),
-        }
-    };
-
-    create_effect(move |_| {
-        spawn_local(fetch_ports_async());
-    });
+        },
+    );
 
     let clear_event_cb = move || {
-        set_filter_ports.set(ports.get());
-        spawn_local(fetch_ports_async());
+        fetch_ports.refetch();
     };
 
     let delet_event_cb = move |pid: String| {
@@ -52,7 +56,7 @@ pub fn App() -> impl IntoView {
                 .as_bool()
                 .unwrap_or_else(|| false);
             if kill {
-                fetch_ports_async().await;
+                fetch_ports.refetch();
             }
         });
     };
@@ -60,10 +64,12 @@ pub fn App() -> impl IntoView {
     view! {
         <div>
             <div class="w-screen fixed z-50 bg-white">
-                <SearchBar ports=ports set_filter_ports=set_filter_ports clear_event=clear_event_cb/>
+                <SearchBar ports=fetch_ports.get().unwrap_or_default() set_filter_ports=set_filter_ports clear_event=clear_event_cb/>
             </div>
             <div class="pt-10">
-                <PortTable props=filter_ports delete_cb=delet_event_cb/>
+                <Show when=move || loading.get() == false fallback=|| view! {<Loading/>}>
+                    <PortTable props=filter_ports delete_cb=delet_event_cb/>
+                </Show>
             </div>
         </div>
     }

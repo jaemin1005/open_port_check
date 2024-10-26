@@ -6,6 +6,7 @@ use leptos::*;
 pub mod components {
     pub mod table;
     pub mod search;
+    pub mod loading;
 }
 
 pub mod interfaces {

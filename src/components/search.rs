@@ -6,7 +6,7 @@ use crate::interfaces::port::PortInfo;
 
 #[component]
 pub fn SearchBar(
-    ports: ReadSignal<Vec<PortInfo>>,
+    ports: Vec<PortInfo>,
     set_filter_ports: WriteSignal<Vec<PortInfo>>,
     // static: 클로저가 프로그램의 전체 수명 동안 유효하다는 것을 보장
     // Clone: 이벤트 핸들러를 여러 요소에 걸쳐 사용해야 할 경우가 있는데, 이 경우 핸들러를 복사해서 사용
@@ -20,7 +20,7 @@ pub fn SearchBar(
         let value = event_target_value(&e);
         // 필터링 로직 적용
 
-        set_filter_ports.set(ports.get());
+        set_filter_ports.set(ports.clone());
         set_filter_ports.update(|ports| {
             ports.retain(|port| match filter.get() {
                 FILTER::PROCESS => port
